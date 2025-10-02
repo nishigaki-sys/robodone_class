@@ -771,6 +771,7 @@
                 modalTitle.textContent = `${classData.course} - 詳細設定`;
                 daySelect.value = classData.day;
                 timeSelect.value = classData.time;
+                document.querySelector(`input[name="classroom"][value="${classData.classroomId}"]`).checked = true;
                 capacityInput.value = classData.capacity;
                 studentsInput.value = classData.students;
                 document.querySelector(`input[name="promotionTiming"][value="${classData.promotionTiming || '4月'}"]`).checked = true;
@@ -789,33 +790,57 @@
 
             function saveClassDetails() {
                 if (!editingClassId) return;
-                const classroomSchedules = getClassroomSchedules(currentClassroomId);
+
+                const originClassroomId = currentClassroomId;
+                const classroomSchedules = getClassroomSchedules(originClassroomId);
                 const classIndex = (classroomSchedules[currentSemesterId] || []).findIndex(c => c.id === editingClassId);
                 if (classIndex === -1) return;
                 
                 const classData = classroomSchedules[currentSemesterId][classIndex];
-
+                
+                const newClassroomId = document.querySelector('input[name="classroom"]:checked').value;
                 const newDay = daySelect.value;
                 const newTime = timeSelect.value;
-                const hasMoved = classData.day !== newDay || classData.time !== newTime;
-
-                if (hasMoved) {
-                    if (isSlotOccupied(newDay, newTime, courseInfo[classData.course].duration, currentClassroomId, editingClassId)) {
-                        alert('移動先の時間帯は同じ教室の他のクラスと重複しています。');
-                        return;
-                    }
-                    classData.day = newDay;
-                    classData.time = newTime;
-                }
-
+                
                 classData.capacity = parseInt(capacityInput.value) || 0;
                 classData.students = parseInt(studentsInput.value) || 0;
                 classData.promotionTiming = document.querySelector('input[name="promotionTiming"]:checked').value;
-                
+
+                if (originClassroomId !== newClassroomId) {
+                    // Check for collision in the TARGET classroom at the original time
+                    if (isSlotOccupied(classData.day, classData.time, courseInfo[classData.course].duration, newClassroomId, null)) {
+                        alert(`移動先の教室（${newClassroomId === 'classroom1' ? '第1教室' : '第2教室'}）の同じ時間帯は既に埋まっています。\nクラスは持ち越しクラス一覧に移動します。`);
+                         // Remove from original schedule
+                        const [movedClass] = classroomSchedules[currentSemesterId].splice(classIndex, 1);
+                        movedClass.classroomId = newClassroomId;
+                        // Add to the bank of the new classroom
+                        const targetPromoted = getClassroomPromotedClasses(newClassroomId);
+                        targetPromoted[currentSemesterId] = targetPromoted[currentSemesterId] || [];
+                        targetPromoted[currentSemesterId].push(movedClass);
+
+                    } else {
+                        const [movedClass] = classroomSchedules[currentSemesterId].splice(classIndex, 1);
+                        movedClass.classroomId = newClassroomId;
+                        const targetSchedule = getClassroomSchedules(newClassroomId);
+                        targetSchedule[currentSemesterId] = targetSchedule[currentSemesterId] || [];
+                        targetSchedule[currentSemesterId].push(movedClass);
+                    }
+                } else { // Same classroom, maybe day/time changed
+                    const hasMoved = classData.day !== newDay || classData.time !== newTime;
+                    if (hasMoved) {
+                        if (isSlotOccupied(newDay, newTime, courseInfo[classData.course].duration, originClassroomId, editingClassId)) {
+                            alert('移動先の時間帯は同じ教室の他のクラスと重複しています。');
+                            return;
+                        }
+                        classData.day = newDay;
+                        classData.time = newTime;
+                    }
+                }
+
                 invalidateFuture(currentSemesterId);
                 
                 loadSchedule(currentSemesterId);
-                saveCurrentSchedule(); 
+                saveCurrentSchedule({invalidate: false}); // Already invalidated
                 updateDashboard();
                 closeDetailModal();
             }
