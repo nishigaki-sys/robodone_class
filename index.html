@@ -419,7 +419,7 @@
                 });
             }
 
-            function saveCurrentSchedule() {
+            function saveCurrentSchedule(options = { invalidate: true }) {
                 if(currentClassroomId === 'all') return;
                 const classroomSchedules = getClassroomSchedules(currentClassroomId);
                 const classes = [];
@@ -442,6 +442,10 @@
                     });
                 });
                 classroomSchedules[currentSemesterId] = classes;
+                
+                if (options.invalidate) {
+                    invalidateFuture(currentSemesterId);
+                }
                 saveData();
             }
             
@@ -704,8 +708,8 @@
                 classroomPromoted[semesterId] = [...nextSemesterSchedule];
             }
 
-            function switchSemester(semesterId, isImport = false) {
-                if (currentClassroomId !== 'all' && !isImport) saveCurrentSchedule();
+            function switchSemester(semesterId, isSetup = false) {
+                if (currentClassroomId !== 'all' && !isSetup) saveCurrentSchedule({invalidate: false});
                 currentSemesterId = semesterId;
                 
                 ['classroom1', 'classroom2'].forEach(crId => calculateScheduleFor(currentSemesterId, crId));
@@ -717,8 +721,8 @@
                 updatePromotedBank(currentSemesterId);
             }
 
-            function switchClassroom(newClassroomId) {
-                if (currentClassroomId !== 'all') saveCurrentSchedule();
+            function switchClassroom(newClassroomId, isSetup = false) {
+                if (currentClassroomId !== 'all' && !isSetup) saveCurrentSchedule({invalidate: false});
                 currentClassroomId = newClassroomId;
                 classroomSelector.querySelectorAll('.classroom-tab').forEach(tab => {
                     tab.classList.toggle('active', tab.dataset.id === newClassroomId);
@@ -839,7 +843,7 @@
             
             importBtn.addEventListener('click', () => importFile.click());
             exportBtn.addEventListener('click', () => {
-                if (currentClassroomId !== 'all') saveCurrentSchedule();
+                if (currentClassroomId !== 'all') saveCurrentSchedule({invalidate: false});
                 const dataStr = JSON.stringify({schedules, promotedClasses}, null, 2);
                 const blob = new Blob([dataStr], {type: "application/json"});
                 const url = URL.createObjectURL(blob);
@@ -871,8 +875,8 @@
                 e.target.value = '';
             });
 
-            switchClassroom('classroom1');
-            switchSemester(semesters[0].id);
+            switchClassroom('classroom1', true);
+            switchSemester(semesters[0].id, true);
 
             let draggedItem = null;
             function handleDragStart(e) {
