@@ -885,7 +885,7 @@
             importBtn.addEventListener('click', () => importFile.click());
             exportBtn.addEventListener('click', () => {
                 if (currentClassroomId !== 'all') saveCurrentSchedule({invalidate: false});
-                const dataStr = JSON.stringify({schedules, promotedClasses}, null, 2);
+                const dataStr = JSON.stringify({schedules, promotedClasses, schoolName: schoolNameInput.value}, null, 2);
                 const blob = new Blob([dataStr], {type: "application/json"});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -907,6 +907,7 @@
                         if (data.schedules && data.promotedClasses) {
                             schedules = data.schedules;
                             promotedClasses = data.promotedClasses;
+                            schoolNameInput.value = data.schoolName || '';
                             saveData();
                             switchSemester(currentSemesterId, true); // Pass true to prevent saving over imported data
                             alert('インポートが完了しました。');
