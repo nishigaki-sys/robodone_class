@@ -907,6 +907,7 @@
                         if (data.schedules && data.promotedClasses) {
                             schedules = data.schedules;
                             promotedClasses = data.promotedClasses;
+                            saveData();
                             switchSemester(currentSemesterId, true); // Pass true to prevent saving over imported data
                             alert('インポートが完了しました。');
                         } else { alert('無効なファイル形式です。'); }
