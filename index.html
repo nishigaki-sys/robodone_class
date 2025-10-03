@@ -24,7 +24,7 @@
         .dragging { opacity: 0.5; }
         .drag-over { background-color: #3b82f620; border: 2px dashed #3b82f6; }
         .class-item { transition: all 0.2s; position: absolute; cursor: pointer; }
-        .class-item-inactive { pointer-events: none; z-index: 5; }
+        .class-item-inactive { opacity: 0.4; pointer-events: none; z-index: 5; }
         .class-item-in-bank { cursor: grab; }
         .class-item-in-bank:active { cursor: grabbing; }
         
@@ -916,6 +916,8 @@
                 reader.readAsText(file);
                 e.target.value = '';
             });
+
+            schoolNameInput.addEventListener('input', saveData);
 
             switchClassroom('classroom1', true);
             switchSemester(semesters[0].id, true);
